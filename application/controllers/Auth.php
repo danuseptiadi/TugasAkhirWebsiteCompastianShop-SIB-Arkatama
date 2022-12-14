@@ -4,15 +4,20 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 class Auth extends CI_Controller {
 	public function index()
 	{
-		$this->login_model->Login();
+		if ($this->input->post('lgn')) {
+			$this->user_model->login();
+		}
+		$this->load->view('components/login');
+	}
+
+	public function register(){
+		if ($this->input->post('useradd') != null) {
+            $this->user_model->addUser();
+        }
+		$this->load->view('components/user_register');
+	}
+	public function logout(){
 		$this->session->sess_destroy();
-		$data = [
-			'css' => 'login',
-			'js' => 'login',
-			'title' => 'CompastianShop | Login'
-		];
-		$this->load->view('template/header',$data);
-		$this->load->view('login');
-		$this->load->view('template/footer',$data);
+		redirect('Landing_page');
 	}
 }

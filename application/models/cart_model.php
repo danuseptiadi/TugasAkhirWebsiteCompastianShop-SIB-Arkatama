@@ -1,56 +1,51 @@
 <?php
-
 class cart_model extends CI_Model
 {
-    public function addCart(){
-        $data = [
-            'cart_id' => 'cart10000000001',
-            'product_id' => 'PDT10000000001',
-            'customer_id' => 'CTR10000000001'
-        ];
-        $this->db->insert('cart', $data);
-        return $this->db->affected_rows();
-    }
-    
-    
-    public function getCart($limit = null,$data = null){
-        if ($data == null) {
-            return $this->db->get('cart',$limit)->result_array();
-        } else {
-            return $this->db->get_where('cart', $data)->row_array();
+    public function addCart($url){
+        if ($this->input->post('addcart')!=null) {
+            $data = array_merge($this->input->post('addwc'),
+            [
+                'quantity' => $this->input->post('quantity'),
+                'user_id' => $this->session->user_id
+            ]);
+
+            $this->db->insert('cart', $data);
+            if($this->db->affected_rows() == 1){
+                redirect($url);
+            }else{
+                echo "gagal";
+            }
         }
     }
     
-    
-    public function updateCart(){
-        $data = [
-            'cart_id' => 'cart10000000001',
-            'product_id' => 'PDT10000000001',
-            'customer_id' => 'ADM10000000001'
-        ];
-
-        $this->db->update('cart', $data, ['cart_id' => $data['cart_id']]);
-        return $this->db->affected_rows();
+    public function getCart($limit = null){
+            return $this->db->get_where('cart',['user_id' =>  $this->session->user_id])->result_array();
     }
 
-    public function deleteCart()
-    {
-        $cart_id = "cart10000000001";
-        $this->db->delete('cart', ['cart_id' => $cart_id]);
-        return $this->db->affected_rows();
-    }
-    
-    public function filterCart($limit = null){
-        $data = [
-            'cart_id' => '001'
-        ];
-    
-        $sql = 'SELECT * FROM cart WHERE';
-        foreach($data as $key => $value){
-            $sql = $sql." ".$key." LIKE '%". $value."%' OR";
+    public function updateQuantity(){
+        if ($this->input->post('update_qty') != null) {
+            $data = [
+                'id' => $this->input->post('cart_id'),
+                'quantity' => $this->input->post('quantity')
+            ];
+            $this->db->update('cart', $data, ['id' => $data['id']]);
+            if($this->db->affected_rows() == 1){
+                redirect(base_url('Landing_page/cart'));
+            }         
         }
-        $sql = rtrim($sql, "OR").';';
-        return $this->db->query($sql)->result_array();
+    }
+
+
+    
+    public function deleteCart($id,$url){
+        if ($id == 'all') {
+            $this->db->delete('cart', ['user_id' => $this->session->user_id]);
+        }else{
+            $this->db->delete('cart', ['id' => $id]);
+        }
+        if($this->db->affected_rows() != 0){
+            redirect($url);
+        }
     }
 }
-
+?>

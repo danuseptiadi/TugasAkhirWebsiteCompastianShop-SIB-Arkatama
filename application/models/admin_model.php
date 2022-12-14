@@ -3,62 +3,59 @@
 class admin_model extends CI_Model
 {
     public function addAdmin(){
-        $data = [
-            'admin_id' => 'ADM1000000001',
-            'admin_name' => 'Malabi',
-            'admin_gender' => 'male',
-            'admin_birth' => '2022-12-01',
-            'admin_email' => 'number',
-            'admin_number' => '0896128144252',
-            'admin_image' => 'ADM1000000001',
-            'admin_status' => 'active'
-        ];
-        $this->db->insert('admin', $data);
-        return $this->db->affected_rows();
+        if ($this->input->post('admadd')!=null) {
+            $data = array_merge($this->input->post('addadm'),['role' => 'admin']);
+            $data['password'] = sha1($data['password']);
+            $this->db->insert('users', $data);
+            return $this->db->affected_rows();
+        }
     }
     
-    public function getAdmin($limit = null,$data = null){
-        if ($data == null) {
-            return $this->db->get('admin',$limit)->result_array();
-        } else {
-            return $this->db->get_where('admin', $data)->row_array();
+    public function getAdmin($limit = null){
+        return $this->db->get_where('users', ['id' => $this->session->admin_id, 'role' => 'admin'])->row_array();    
+    }
+
+    public function getAllAdmin($limit = null){
+        return $this->db->get_where('users',['role' => 'admin'])->result_array();
+    }
+
+    public function getTotalAdmin(){
+        $sql = "SELECT COUNT(id) as total FROM users WHERE role = 'admin'";
+        $data = $this->db->query($sql)->row_array();
+        if ($data['total'] == null) {
+            $data['total'] = 0;
         }
+        return $data;
     }
     
     public function updateAdmin(){
-        $data = [
-            'admin_id' => 'ADM1000000001',
-            'admin_name' => 'Malabi',
-            'admin_gender' => 'male',
-            'admin_birth' => '2022-12-01',
-            'admin_email' => 'number',
-            'admin_number' => '0896128144252',
-            'admin_image' => 'ADM1000000001.jpg',
-            'admin_status' => 'active'
-        ];
-
-        $this->db->update('admin', $data, ['admin_id' => $data['admin_id']]);
-        return $this->db->affected_rows();
-    }
-
-    public function deleteAdmin()
-    {
-        $admin_id = "ADM1000000001";
-        $this->db->delete('admin', ['admin_id' => $admin_id]);
-        return $this->db->affected_rows();
-    }
-    
-    public function filterAdmin($limit = null){
-        $data = [
-            'admin_id' => '001'
-        ];
-    
-        $sql = 'SELECT * FROM admin WHERE';
-        foreach($data as $key => $value){
-            $sql = $sql." ".$key." LIKE '%". $value."%' OR";
+        if ($this->input->post('upadm')!=null) {
+            $admin = $this->admin_model->getAdmin();
+            $data = $this->input->post('updateadm');
+            if ($data['new_pass'] == $data['confirm_pass']) {
+                if (sha1($data['old_pass']) == $admin['password']) {
+                    $data = [
+                        'id' => $this->session->admin_id,
+                        'name' => $data['name'],
+                        'password' => sha1($data['new_pass'])
+                    ];
+                    $this->db->update('admins', $data, ['id' => $data['id']]);
+                    return $this->db->affected_rows();
+                }else{
+                    $this->db->update('admins',['name' => $this->input->post('updateadm')['name']], ['id' => $admin['id']]);
+                    return "password lama salah";
+                }
+            }else {
+                $this->db->update('admins',['name' => $this->input->post('updateadm')['name']], ['id' => $admin['id']]);
+                return "password baru tidak sama";
+            }
         }
-        $sql = rtrim($sql, "OR").';';
-        return $this->db->query($sql)->result_array();
+    }
+
+    public function deleteAdmin($id)
+    {
+        $this->db->delete('users', ['id' => $id]);
+        return $this->db->affected_rows();
     }
 }
 

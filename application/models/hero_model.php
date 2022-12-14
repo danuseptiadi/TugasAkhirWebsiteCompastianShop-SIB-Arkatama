@@ -3,94 +3,77 @@
 class hero_model extends CI_Model
 {
     public function addHero(){
-        $sql = 'SELECT hero_id FROM hero ORDER BY hero_id DESC LIMIT 1';
-        $new_id = $this->db->query($sql)->row_array();
-        if ($new_id != null) {
-            $new_id = $new_id['hero_id'];
-            $new_id = 'hero'.(int)trim($new_id,"hero")+1;
-        }else{
-            $new_id = 'hero1000000000';
-        }
-        $hero = [
-                    'hero_id' => $new_id,
-                    'hero_title' => $this->input->post('addHero')['hero_title'],
-                    'hero_image' => $new_id.'.jpg',
-                    'hero_status' => 'waiting',
-                    'last_submit' => $this->session->login['user_id']
-                ];
-        $config['upload_path']          = './public/assets/hero-img/';
-        $config['allowed_types']        = 'gif|jpg|png';
-        $config['file_name'] = $hero['hero_image'];
-        
-        $this->load->library('upload', $config);
+        if ($this->input->post('add_hero')!=null) {
+            $sql = 'SELECT id FROM hero ORDER BY id DESC LIMIT 1';
+            $new_id = $this->db->query($sql)->row_array();
+            if ($new_id != null) {
+                $new_id = $new_id['id']+1;
+                //$new_id = 'PDT'.(int)trim($new_id,"PDT")+1;
+            }else{
+                $new_id = 1;
+            }
+            $data = array_merge($this->input->post('addhero'),
+            [
+                'id' => $new_id,
+                'img' => $new_id.'hr_01.jpg',
+                'status' => 'belum disetujui'
+            ]);
+            $config['upload_path']          = './public/uploaded_img/';
+            $config['allowed_types']        = 'gif|jpg|png';
+            $config['file_name'] = $data['img'];
+            $this->load->library('upload', $config);
 
-        if ( ! $this->upload->do_upload('addHeroimg'))
-        {
+            if (!$this->upload->do_upload('heroimg'))
+            {
                 $error = array('error' => $this->upload->display_errors());
-        }
-        else
-        {
-                $data = array('upload_data' => $this->upload->data());
-                $this->db->insert('hero', $hero);
+                var_dump($error);
+            }else{
+                $this->db->insert('hero', $data);
                 return $this->db->affected_rows();
+            }
         }
     }
     
-    
-    public function getHero($limit = null,$data = null){
-        if ($data == null) {
+    public function getHero($limit = null,$product = null){
+        if ($product == null) {
             return $this->db->get('hero',$limit)->result_array();
         } else {
-            return $this->db->get_where('hero', $data)->row_array();
+            return $this->db->get_where('hero',['id' => $product])->row_array();
         }
     }
-    
+    public function getAccHero($limit = null){
+            return $this->db->get_where('hero',['status' => 'disetujui'])->result_array();
+    }
     
     public function updateHero(){
-        $hero = [
-            'hero_id' => 'hero10000000001',
-            'hero_title' => 'Account Telegram',
-            'hero_image' => 'hero10000000001.jpg',
-            'hero_status' => 'disetujui',
-            'last_submit' => 'ADM10000000001'
-        ];
-        
-        $path_to_file = 'public/assets/hero-img/'.$hero['hero_image'];
-		if(unlink($path_to_file)) {
-			 echo 'deleted successfully';
-		}
-		else {
-			 echo 'errors occured';
-		}
-
-        $this->db->update('hero', $hero, ['hero_id' => $hero['hero_id']]);
-        return $this->db->affected_rows();
-    }
-
-    public function deleteHero()
-    {
-        if ($this->input->post('deleteHero') != null) {
-            $hero_id = $this->input->post('deleteHero');
-            $path_to_file = 'public/assets/hero-img/'.$hero_id.'.jpg';
-            if(unlink($path_to_file)) {
-                $message = "Data Berhasil Di Hapus";
-                echo "<script type='text/javascript'>alert('$message');</script>";
-            }
-            else {
-                $message = "Data Gagal Di Hapus";
-                echo "<script type='text/javascript'>alert('$message');</script>";
-            }
-            $this->db->delete('hero', ['hero_id' => $hero_id]);
+        if ($this->input->post('update_hero_status')!=null) {
+            
+            $this->db->update('hero', $this->input->post('herosuper'), ['id' => $this->input->post('herosuper')['id']]);
             return $this->db->affected_rows();
         }
     }
+
+    public function deleteHero($id)
+    {
+        $path = 'public/uploaded_img/'.$id.'hr_01.jpg';
+        if(is_file($path)){
+            unlink($path);
+        }
+        $this->db->delete('hero', ['id' => $id]);
+        if ($this->db->affected_rows() == 1) {
+            redirect(base_url('Admin/hero'));
+        }
+    }
+
     
-    public function filterHero($limit = null){
+    public function filterProduct($cari){
         $data = [
-            'hero_id' => '001'
+            'name' => $cari,
+            'produsen' => $cari,
+            'details' => $cari  
         ];
     
-        $sql = 'SELECT * FROM hero WHERE';
+        $sql = 'SELECT * FROM products WHERE';
         foreach($data as $key => $value){
             $sql = $sql." ".$key." LIKE '%". $value."%' OR";
         }
